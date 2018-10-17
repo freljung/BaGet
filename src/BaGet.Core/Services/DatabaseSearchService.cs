@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BaGet.Core.Services
 {
-    public class DatabaseSearchService : ISearchService
+    public class DatabaseSearchService : ISearchService, ISearchServiceEx
     {
         private readonly IContext _context;
 
@@ -67,7 +67,44 @@ namespace BaGet.Core.Services
             return result.AsReadOnly();
         }
 
-        public async Task<IReadOnlyList<string>> AutocompleteAsync(string query, int skip = 0, int take = 20)
+        public Task<IReadOnlyList<string>> AutocompleteAsync(string query, int skip = 0, int take = 20)
+        {
+            return AutocompleteByQueryAsync(query, skip: skip, take: take, supportedFramework: null);
+        }
+
+        public Task<IReadOnlyList<string>> AutocompleteAsync(string query, string id, string supportedFramework, 
+            int skip = 0, int take = 20, bool prerelease = false)
+        {
+            if (!string.IsNullOrEmpty(id))
+            {
+                return AutocompleteByIdAsync(id, supportedFramework, skip, take, prerelease);
+            }
+            else
+            {
+                return AutocompleteByQueryAsync(query, supportedFramework, skip, take, prerelease);
+            }
+        }
+
+        private async Task<IReadOnlyList<string>> AutocompleteByIdAsync(string id, string supportedFramework,
+            int skip = 0, int take = 20, bool prerelease = false)
+        {
+            IQueryable<Package> search = _context.Packages;
+
+            id = id.ToLower();
+            var result = await search.Where(p => p.Id.ToLower().Equals(id) && p.Listed)
+                .IncludePrerelease(prerelease)
+                .OrderByDescending(p => p.VersionString)
+                .Skip(skip)
+                .Take(take)
+                .Select(p => p.VersionString)
+                .Distinct()
+                .ToListAsync();
+
+            return result.AsReadOnly();
+        }
+
+        private async Task<IReadOnlyList<string>> AutocompleteByQueryAsync(string query, string supportedFramework,
+            int skip = 0, int take = 20, bool prerelease = false)
         {
             IQueryable<Package> search = _context.Packages;
 
@@ -78,6 +115,7 @@ namespace BaGet.Core.Services
             }
 
             var results = await search.Where(p => p.Listed)
+                .IncludePrerelease(prerelease)
                 .OrderByDescending(p => p.Downloads)
                 .Skip(skip)
                 .Take(take)
@@ -86,6 +124,16 @@ namespace BaGet.Core.Services
                 .ToListAsync();
 
             return results.AsReadOnly();
+        }
+    }
+
+    public static class PackageQueryExtensions
+    {
+        public static IQueryable<Package> IncludePrerelease(this IQueryable<Package> source, bool includePrerelease)
+        {
+            if (includePrerelease == false)
+                return source.Where(p => p.Version.IsPrerelease == false);
+            return source;
         }
     }
 }

@@ -31,9 +31,23 @@ namespace BaGet.Web.Controllers
             };
         }
 
-        public async Task<IActionResult> Autocomplete([FromQuery(Name = "q")] string query = null)
+        public async Task<IActionResult> Autocomplete([FromQuery(Name = "q")] string query = null,
+                                                      [FromQuery(Name = "id")] string id = null,
+                                                      [FromQuery(Name = "supportedFramework")] string supportedFramework = null,
+                                                      [FromQuery(Name = "skip")] int skip = 0,
+                                                      [FromQuery(Name = "take")] int take = 20,
+                                                      [FromQuery(Name = "prerelease")] bool prerelease = false)
         {
-            var results = await _searchService.AutocompleteAsync(query);
+            IReadOnlyList<string> results;
+            // A bit fugly but whatever
+            if (_searchService is ISearchServiceEx searchServiceEx)
+            {
+                results = await searchServiceEx.AutocompleteAsync(query, id, supportedFramework, skip, take, prerelease);
+            }
+            else
+            {
+                results = await _searchService.AutocompleteAsync(query, take: take);
+            }
 
             return Json(new
             {

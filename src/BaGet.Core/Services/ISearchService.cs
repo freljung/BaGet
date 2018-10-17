@@ -15,6 +15,11 @@ namespace BaGet.Core.Services
         Task<IReadOnlyList<string>> AutocompleteAsync(string query, int skip = 0, int take = 20);
     }
 
+    public interface ISearchServiceEx
+    {
+        Task<IReadOnlyList<string>> AutocompleteAsync(string query, string id, string supportedFramework, int skip = 0, int take = 20, bool prerelease = false);
+    }
+
     public class SearchResult
     {
         public string Id { get; set; }
