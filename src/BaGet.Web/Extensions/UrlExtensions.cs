@@ -6,8 +6,8 @@ namespace BaGet.Web.Extensions
 {
     public static class UrlExtensions
     {
-        public static string PackageBase(this IUrlHelper url) => url.AbsoluteUrl("v3/package/");
-        public static string RegistrationsBase(this IUrlHelper url) => url.AbsoluteUrl("v3/registration/");
+        public static string PackageBase(this IUrlHelper url) => url.AbsoluteUrl("/v3/package/");
+        public static string RegistrationsBase(this IUrlHelper url) => url.AbsoluteUrl("/v3/registration/");
         public static string PackagePublish(this IUrlHelper url) => url.AbsoluteRouteUrl(Routes.UploadRouteName);
         public static string PackageSearch(this IUrlHelper url) => url.AbsoluteRouteUrl(Routes.SearchRouteName);
         public static string PackageAutocomplete(this IUrlHelper url) => url.AbsoluteRouteUrl(Routes.AutocompleteRouteName);
@@ -43,6 +43,7 @@ namespace BaGet.Web.Extensions
         public static string AbsoluteUrl(this IUrlHelper url, string relativePath)
         {
             var request = url.ActionContext.HttpContext.Request;
+            relativePath = url.ActionContext.HttpContext.Request.PathBase.Add(new Microsoft.AspNetCore.Http.PathString(relativePath));
 
             return new Uri(new Uri(request.Scheme + "://" + request.Host.Value), relativePath).ToString();
         }
